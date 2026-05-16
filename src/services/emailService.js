@@ -8,6 +8,9 @@ function getTransporter() {
   if (transporter) return transporter;
 
   if (config.isTest || !config.email.host) {
+    if (!config.isTest && !config.email.host) {
+      console.warn('[email] SMTP_HOST not set — emails will be captured in memory only and not delivered. Configure SMTP_* env vars to enable real email delivery.');
+    }
     transporter = {
       sendMail: async (msg) => {
         sentMessages.push(msg);
