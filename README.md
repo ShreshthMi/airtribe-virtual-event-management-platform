@@ -57,13 +57,13 @@ Key variables:
 | Variable | Purpose |
 | --- | --- |
 | `PORT` | HTTP port (default `3000`) |
-| `JWT_SECRET` | Secret used to sign JWTs |
+| `JWT_SECRET` | Secret used to sign JWTs. Required outside `development` / `test` — the server will throw on startup if missing in production. |
 | `JWT_EXPIRES_IN` | Token lifetime (default `1d`) |
 | `BCRYPT_SALT_ROUNDS` | bcrypt cost factor (default `10`) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` | SMTP credentials for outgoing emails |
 | `EMAIL_FROM` | `From:` header for outgoing emails |
 
-If `SMTP_HOST` is empty, the email service falls back to an in-memory mock transport — handy for development and tests.
+If `SMTP_HOST` is empty, the email service falls back to an in-memory mock transport — handy for development and tests. Outside of `NODE_ENV=test`, the server logs a warning at startup so misconfiguration in production is visible rather than silent.
 
 ### Run
 
@@ -84,7 +84,7 @@ All test suites should pass:
 
 ```
 Test Suites: 3 passed, 3 total
-Tests:       30 passed, 30 total
+Tests:       34 passed, 34 total
 ```
 
 ## API Reference
@@ -95,8 +95,8 @@ All request and response bodies are JSON. Authenticated routes expect an `Author
 
 | Method | Path | Auth | Description |
 | --- | --- | --- | --- |
-| `POST` | `/register` | Public | Register a new user (`organizer` or `attendee`). Sends a welcome email. |
-| `POST` | `/login` | Public | Log in with email/password; returns a JWT. |
+| `POST` | `/register` (alias: `/users/signup`) | Public | Register a new user (`organizer` or `attendee`). Sends a welcome email. |
+| `POST` | `/login` (alias: `/users/login`) | Public | Log in with email/password; returns a JWT. |
 | `GET` | `/me` | Bearer | Return the current user's profile. |
 
 #### `POST /register`
@@ -131,7 +131,7 @@ Returns the same shape as `/register` minus the welcome email.
 
 | Method | Path | Auth | Description |
 | --- | --- | --- | --- |
-| `GET` | `/events` | Public | List all events. |
+| `GET` | `/events` | Public | List events. Supports pagination via `?page=` and `?pageSize=`. |
 | `GET` | `/events/:id` | Public | Get a single event. |
 | `POST` | `/events` | Organizer | Create a new event. |
 | `PUT` | `/events/:id` | Organizer (owner) | Update fields of an event you own. |
@@ -153,6 +153,18 @@ Returns the same shape as `/register` minus the welcome email.
 ```
 
 `date` must be `YYYY-MM-DD`, `time` must be `HH:MM`, `capacity` is optional (omit or set `null` for unlimited).
+
+#### `GET /events?page=1&pageSize=20`
+
+Both query params are optional. Defaults: `page=1`, `pageSize=20`. `pageSize` is capped at `100`. Invalid values fall back to defaults.
+
+Response:
+```json
+{
+  "events": [ /* ... */ ],
+  "pagination": { "page": 1, "pageSize": 20, "total": 42, "totalPages": 3 }
+}
+```
 
 #### Event object
 
