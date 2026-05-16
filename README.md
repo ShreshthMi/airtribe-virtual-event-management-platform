@@ -2,6 +2,10 @@
 
 A RESTful Node.js / Express backend for managing virtual events. Users can register, log in, create events (as an organizer), and register as participants. All data is stored in memory using plain JavaScript arrays and objects — no database is required.
 
+**Live API:** https://airtribe-virtual-event-management.onrender.com
+
+Quick liveness check: [`GET /health`](https://airtribe-virtual-event-management.onrender.com/health) returns `{"status":"ok"}`. (On Render's free tier, the bare `/` path is intercepted by their edge — use `/health` or any of the API endpoints below to verify the service is up.)
+
 ## Features
 
 - User registration and login with **bcryptjs** password hashing and **JWT** session tokens.
@@ -89,7 +93,7 @@ Tests:       43 passed, 43 total
 
 ## Deployment
 
-A live instance is hosted on Render's free tier and is the simplest way to try the API without cloning the repo.
+A live instance is hosted on Render's free tier at **https://airtribe-virtual-event-management.onrender.com** and is the simplest way to try the API without cloning the repo.
 
 ### Required environment variables on Render
 
