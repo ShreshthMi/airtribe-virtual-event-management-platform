@@ -83,9 +83,40 @@ npm run test
 All test suites should pass:
 
 ```
-Test Suites: 3 passed, 3 total
-Tests:       34 passed, 34 total
+Test Suites: 4 passed, 4 total
+Tests:       43 passed, 43 total
 ```
+
+## Deployment
+
+A live instance is hosted on Render's free tier and is the simplest way to try the API without cloning the repo.
+
+### Required environment variables on Render
+
+Set these under **Environment → Add Environment Variable** when creating the Web Service (or for an existing service, under the **Environment** tab):
+
+| Key | Value |
+| --- | --- |
+| `JWT_SECRET` | A long random string. Generate one with `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`. The server refuses to boot in production without it. |
+| `NODE_ENV` | `production` |
+
+Optional — only needed if you want real email delivery instead of the in-memory mock transport: `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`.
+
+Render injects `PORT` automatically; the server reads it via `process.env.PORT`. No `Procfile`, `render.yaml`, or secret files are required — regular environment variables cover all configuration.
+
+### Build and start commands
+
+Render auto-detects a Node.js project and uses:
+- **Build command:** `npm install`
+- **Start command:** `npm start`
+
+No overrides needed.
+
+### Free-tier caveats
+
+- **Cold starts.** Render's free tier puts a service to sleep after ~15 minutes of inactivity. The first request after a sleep takes roughly **30–60 seconds** to wake the instance — subsequent requests are fast. If a graded request appears to hang, retry once after a minute.
+- **In-memory state is ephemeral.** Every redeploy, sleep, or crash wipes all users, events, and registrations. This is consistent with the brief's "in-memory data structures" requirement; if you need persistence, swap the in-memory models in [`src/models/`](src/models/) for a real database without touching the routes/controllers.
+- **No real emails by default.** With SMTP vars unset, the email service falls back to an in-memory mock and logs a one-time startup warning in the Render service logs. The API still returns `201` on registration and `201` on event registration — the email codepath runs end-to-end against the mock transport.
 
 ## API Reference
 
