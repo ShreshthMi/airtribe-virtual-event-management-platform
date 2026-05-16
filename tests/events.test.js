@@ -63,7 +63,7 @@ describe('POST /events', () => {
 });
 
 describe('GET /events', () => {
-  test('lists events publicly', async () => {
+  test('lists events publicly with pagination metadata', async () => {
     await request(app)
       .post('/events')
       .set('Authorization', `Bearer ${organizerToken}`)
@@ -72,6 +72,39 @@ describe('GET /events', () => {
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.events)).toBe(true);
     expect(res.body.events.length).toBe(1);
+    expect(res.body.pagination).toMatchObject({
+      page: 1,
+      pageSize: 20,
+      total: 1,
+      totalPages: 1,
+    });
+  });
+
+  test('paginates results via page and pageSize query params', async () => {
+    for (let i = 0; i < 5; i += 1) {
+      await request(app)
+        .post('/events')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({ ...sampleEvent, title: `Event ${i}` });
+    }
+    const page1 = await request(app).get('/events?page=1&pageSize=2');
+    expect(page1.status).toBe(200);
+    expect(page1.body.events.length).toBe(2);
+    expect(page1.body.pagination).toMatchObject({ page: 1, pageSize: 2, total: 5, totalPages: 3 });
+
+    const page3 = await request(app).get('/events?page=3&pageSize=2');
+    expect(page3.body.events.length).toBe(1);
+    expect(page3.body.pagination.page).toBe(3);
+
+    const beyond = await request(app).get('/events?page=10&pageSize=2');
+    expect(beyond.body.events.length).toBe(0);
+  });
+
+  test('clamps invalid pagination params to safe defaults', async () => {
+    const res = await request(app).get('/events?page=-1&pageSize=9999');
+    expect(res.status).toBe(200);
+    expect(res.body.pagination.page).toBe(1);
+    expect(res.body.pagination.pageSize).toBe(100);
   });
 
   test('GET /events/:id returns the event', async () => {

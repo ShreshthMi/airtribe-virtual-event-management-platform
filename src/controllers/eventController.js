@@ -2,6 +2,17 @@ const eventModel = require('../models/eventModel');
 const userModel = require('../models/userModel');
 const emailService = require('../services/emailService');
 const { validateEventPayload } = require('../utils/validators');
+const config = require('../config/config');
+
+function parsePagination(query) {
+  const { defaultPageSize, maxPageSize } = config.pagination;
+  let page = parseInt(query.page, 10);
+  let pageSize = parseInt(query.pageSize, 10);
+  if (!Number.isFinite(page) || page < 1) page = 1;
+  if (!Number.isFinite(pageSize) || pageSize < 1) pageSize = defaultPageSize;
+  if (pageSize > maxPageSize) pageSize = maxPageSize;
+  return { page, pageSize };
+}
 
 function publicEvent(event) {
   return {
@@ -20,8 +31,20 @@ function publicEvent(event) {
 }
 
 async function listEvents(req, res) {
-  const events = eventModel.listEvents().map(publicEvent);
-  return res.json({ events });
+  const { page, pageSize } = parsePagination(req.query);
+  const all = eventModel.listEvents();
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize;
+  const events = all.slice(start, end).map(publicEvent);
+  return res.json({
+    events,
+    pagination: {
+      page,
+      pageSize,
+      total: all.length,
+      totalPages: Math.max(1, Math.ceil(all.length / pageSize)),
+    },
+  });
 }
 
 async function getEvent(req, res) {
