@@ -81,6 +81,17 @@ describe('POST /events/:id/register', () => {
       .set('Authorization', `Bearer ${attendeeToken}`);
     expect(res.status).toBe(404);
   });
+
+  test('exactly one of two concurrent registrations succeeds on a capacity=1 event', async () => {
+    const results = await Promise.all([
+      request(app).post(`/events/${eventId}/register`).set('Authorization', `Bearer ${attendeeToken}`),
+      request(app).post(`/events/${eventId}/register`).set('Authorization', `Bearer ${secondAttendeeToken}`),
+    ]);
+    const statuses = results.map((r) => r.status).sort();
+    expect(statuses).toEqual([201, 409]);
+    const get = await request(app).get(`/events/${eventId}`);
+    expect(get.body.event.participantCount).toBe(1);
+  });
 });
 
 describe('GET /events/me/registrations', () => {
