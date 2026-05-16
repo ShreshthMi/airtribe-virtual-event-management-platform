@@ -118,3 +118,30 @@ describe('GET /me', () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe('Route aliases', () => {
+  test('POST /users/signup also registers a user', async () => {
+    const res = await request(app).post('/users/signup').send({
+      name: 'Alias User',
+      email: 'alias@example.com',
+      password: 'password123',
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.user.email).toBe('alias@example.com');
+    expect(typeof res.body.token).toBe('string');
+  });
+
+  test('POST /users/login also authenticates a user', async () => {
+    await request(app).post('/register').send({
+      name: 'Alias Login',
+      email: 'aliaslogin@example.com',
+      password: 'password123',
+    });
+    const res = await request(app).post('/users/login').send({
+      email: 'aliaslogin@example.com',
+      password: 'password123',
+    });
+    expect(res.status).toBe(200);
+    expect(typeof res.body.token).toBe('string');
+  });
+});
